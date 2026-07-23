@@ -1,0 +1,1134 @@
+<!DOCTYPE html>  <html lang="ar" dir="rtl">  <head>  
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<meta charset="UTF-8">  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">  <title>Aldaliya Water Center</title>
+<meta name="description" content="خريطة تفاعلية لتوزيع المياه اليومي في مركز الدالية">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0b0b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Aldaliya Water Center">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>  <style>
+
+:root{
+  --bg-deep:#0a1416;
+  --bg-deep2:#0d1c20;
+  --panel:#0f2229;
+  --panel-2:#122a32;
+  --line:rgba(120,196,204,0.16);
+  --line-strong:rgba(120,196,204,0.32);
+  --cyan:#2fc2d6;
+  --cyan-soft:#7fdce8;
+  --coral:#ff5a4e;
+  --gold:#d9a441;
+  --text:#eaf6f6;
+  --muted:#8fb0b4;
+  --shadow:0 10px 30px rgba(0,0,0,0.45);
+}
+
+*{box-sizing:border-box;}
+
+body{
+margin:0;
+min-height:100vh;
+background:
+  radial-gradient(1100px 600px at 15% -10%, rgba(47,194,214,0.10), transparent 55%),
+  radial-gradient(900px 500px at 100% 10%, rgba(217,164,65,0.06), transparent 50%),
+  linear-gradient(180deg,var(--bg-deep) 0%,var(--bg-deep2) 100%);
+color:var(--text);
+font-family:'Tajawal',Arial,sans-serif;
+text-align:center;
+padding-bottom:28px;
+}
+
+::selection{background:var(--cyan);color:#04211f;}
+
+.title-box{
+position:relative;
+background:linear-gradient(180deg,var(--panel),var(--panel-2));
+padding:20px 18px 18px;
+margin:16px auto 12px;
+width:92%;
+max-width:760px;
+border-radius:18px;
+border:1px solid var(--line);
+box-shadow:var(--shadow);
+overflow:hidden;
+}
+
+.title-box::before{
+content:"";
+position:absolute;
+inset:0 0 auto 0;
+height:3px;
+background:linear-gradient(90deg,transparent,var(--cyan),var(--gold),transparent);
+background-size:200% 100%;
+animation:flowline 6s linear infinite;
+}
+
+@keyframes flowline{
+0%{background-position:200% 0;}
+100%{background-position:-200% 0;}
+}
+
+.brand-row{
+display:flex;
+align-items:center;
+justify-content:center;
+gap:12px;
+margin-bottom:8px;
+}
+
+.brand-badge-img{
+  width:48px;height:48px;border-radius:50%;
+  object-fit:cover;
+  border:2px solid var(--line-strong);
+  box-shadow:0 0 12px rgba(47,194,214,0.35);
+  flex:none;
+}
+
+h2{
+margin:2px 0;
+font-family:'Cairo',Arial,sans-serif;
+font-weight:800;
+font-size:22px;
+letter-spacing:0.2px;
+color:#fff;
+}
+
+.subtitle{
+display:flex;
+align-items:center;
+justify-content:center;
+gap:6px;
+margin:6px 0 12px;
+font-size:12px;
+color:var(--cyan-soft);
+letter-spacing:0.5px;
+}
+
+.live-dot{
+width:8px;height:8px;border-radius:50%;
+background:var(--coral);
+box-shadow:0 0 0 0 rgba(255,90,78,0.6);
+animation:pulse 1.8s infinite;
+}
+
+@keyframes pulse{
+0%{box-shadow:0 0 0 0 rgba(255,90,78,0.55);}
+70%{box-shadow:0 0 0 9px rgba(255,90,78,0);}
+100%{box-shadow:0 0 0 0 rgba(255,90,78,0);}
+}
+
+.credits{
+font-size:13.5px;
+line-height:1.9;
+color:var(--muted);
+border-top:1px dashed var(--line);
+padding-top:10px;
+margin-top:4px;
+}
+
+.bold{
+font-size:14.5px;
+font-weight:700;
+color:#fff;
+font-family:'Cairo',Arial,sans-serif;
+}
+
+/* ===== بطاقة عامة مشتركة ===== */
+.panel-card{
+width:92%;
+max-width:760px;
+margin:14px auto;
+background:linear-gradient(180deg,var(--panel),var(--panel-2));
+padding:16px;
+border-radius:18px;
+border:1px solid var(--line);
+box-shadow:var(--shadow);
+text-align:right;
+}
+
+.panel-title{
+display:flex;
+align-items:center;
+gap:8px;
+font-family:'Cairo',Arial,sans-serif;
+font-weight:800;
+font-size:16px;
+color:#fff;
+margin:0 0 12px;
+}
+
+.panel-title .bar{
+width:4px;height:16px;border-radius:3px;
+background:linear-gradient(180deg,var(--cyan),var(--gold));
+flex:none;
+}
+
+#commentInput{
+width:100%;
+min-height:76px;
+background:#081416;
+color:var(--text);
+border:1px solid var(--line);
+border-radius:12px;
+padding:12px;
+font-family:'Tajawal',Arial,sans-serif;
+font-size:14px;
+resize:vertical;
+}
+#commentInput:focus{outline:2px solid var(--cyan);outline-offset:1px;}
+
+.send-btn{
+margin-top:10px;
+padding:10px 22px;
+background:linear-gradient(135deg,var(--cyan),#1e8fa0);
+color:#04211f;
+border:none;
+border-radius:10px;
+font-weight:800;
+font-family:'Cairo',Arial,sans-serif;
+cursor:pointer;
+box-shadow:0 6px 16px rgba(47,194,214,0.25);
+transition:transform .15s ease,box-shadow .15s ease;
+}
+.send-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(47,194,214,0.35);}
+.send-btn:active{transform:translateY(0);}
+
+#commentsList{margin-top:12px;display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;}
+
+.comment-bubble{
+background:#0b1c20;
+border:1px solid var(--line);
+border-radius:12px;
+padding:10px 12px;
+text-align:right;
+color:var(--text);
+}
+.comment-time{font-size:11px;color:var(--muted);display:block;margin-top:6px;}
+.comment-del{
+margin-top:8px;
+background:rgba(255,90,78,0.12);
+color:var(--coral);
+border:1px solid rgba(255,90,78,0.35);
+padding:5px 10px;
+border-radius:8px;
+cursor:pointer;
+font-family:'Tajawal',Arial,sans-serif;
+font-size:12.5px;
+}
+
+/* ===== الخريطة ===== */
+.map-card{
+width:92%;
+max-width:760px;
+margin:14px auto;
+background:linear-gradient(180deg,var(--panel),var(--panel-2));
+border-radius:18px;
+border:1px solid var(--line);
+box-shadow:var(--shadow);
+padding:12px;
+}
+
+.map{
+position:relative;
+width:100%;
+margin:0 auto;
+border-radius:12px;
+border:1px solid var(--line-strong);
+overflow:hidden;
+background:#04100f;
+}
+
+.map img{
+width:100%;
+display:block;
+pointer-events:none;
+}
+
+svg{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+pointer-events:none;
+}
+
+.station{
+position:absolute;
+width:11px;
+height:11px;
+background:var(--coral);
+box-shadow:0 0 8px rgba(255,90,78,0.7);
+border-radius:3px;
+transform:translate(-50%,-50%);
+animation:blink 1.5s infinite;
+cursor:pointer;
+}
+.area{
+position:absolute;
+width:8px;
+height:8px;
+border-radius:50%;
+background:var(--cyan);
+box-shadow:0 0 7px rgba(47,194,214,0.7);
+transform:translate(-50%,-50%);
+animation:blink 2s infinite;
+cursor:pointer;
+}
+
+.popup{
+position:fixed;
+top:16px;
+left:16px;
+right:16px;
+margin:0 auto;
+max-width:380px;
+background:linear-gradient(180deg,#0f2229,#0a171b);
+border:1px solid var(--line-strong);
+padding:18px 16px 16px;
+border-radius:16px;
+display:none;
+z-index:999999;
+min-width:240px;
+line-height:1.7;
+box-shadow:0 20px 50px rgba(0,0,0,0.6);
+max-height:82vh;
+overflow-y:auto;
+}
+
+.popup-close{
+position:absolute;
+top:10px;
+left:10px;
+background:rgba(255,90,78,0.15);
+color:var(--coral);
+border:1px solid rgba(255,90,78,0.4);
+border-radius:8px;
+width:30px;height:30px;
+cursor:pointer;
+font-size:15px;
+line-height:1;
+}
+
+.station-line{
+stroke:var(--coral);
+stroke-width:0.7;
+opacity:0.16;
+stroke-dasharray:2 10;
+animation:redFlow 80s linear infinite;
+stroke-linecap:round;
+fill:none;
+}
+.water-line{
+fill:none;
+stroke:var(--cyan);
+stroke-width:0.8;
+stroke-linecap:round;
+stroke-dasharray:4 6;
+animation: flow 60s linear infinite;
+opacity:0.65;
+}
+
+@keyframes flow{
+from{stroke-dashoffset:0;}
+to{stroke-dashoffset:-200;}
+}
+@keyframes redFlow{
+from{stroke-dashoffset:0;}
+to{stroke-dashoffset:-800;}
+}
+@keyframes blink{
+0%{opacity:0.35;}
+50%{opacity:1;}
+100%{opacity:0.35;}
+}
+
+/* ===== الدليل (Legend) ===== */
+.legend{
+width:92%;
+max-width:760px;
+margin:14px auto;
+background:linear-gradient(180deg,var(--panel),var(--panel-2));
+padding:14px 16px;
+border-radius:18px;
+border:1px solid var(--line);
+box-shadow:var(--shadow);
+font-size:14px;
+text-align:right;
+}
+
+.legend-row{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin-bottom:12px;
+}
+
+.legend-chip{
+display:inline-flex;
+align-items:center;
+gap:7px;
+background:#0b1c20;
+border:1px solid var(--line);
+padding:7px 12px;
+border-radius:999px;
+font-size:13px;
+color:var(--text);
+}
+
+.box-red{width:11px;height:11px;background:var(--coral);display:inline-block;border-radius:3px;box-shadow:0 0 6px rgba(255,90,78,0.6);}
+.box-blue{width:11px;height:11px;background:var(--cyan);display:inline-block;border-radius:50%;box-shadow:0 0 6px rgba(47,194,214,0.6);}
+
+.add-img{
+width:110px;
+border-radius:10px;
+border:1px solid var(--line-strong);
+display:block;
+margin:0 0 0 auto;
+}
+
+.admin-btn{
+display:inline-flex;
+align-items:center;
+gap:8px;
+margin:16px auto 6px;
+padding:11px 22px;
+background:#0b1c20;
+color:var(--gold);
+border:1px solid rgba(217,164,65,0.4);
+border-radius:12px;
+font-family:'Cairo',Arial,sans-serif;
+font-weight:700;
+font-size:14px;
+cursor:pointer;
+}
+.admin-btn:hover{border-color:var(--gold);}
+
+#viewsBox{
+margin:10px auto 4px;
+background:#0b1c20;
+color:var(--muted);
+padding:10px 16px;
+width:fit-content;
+min-width:180px;
+border-radius:999px;
+border:1px solid var(--line);
+font-size:13px;
+letter-spacing:0.3px;
+}
+
+@media (max-width:480px){
+  h2{font-size:19px;}
+  .panel-card,.map-card,.legend,.title-box{width:94%;border-radius:16px;}
+}
+
+</style>  </head>  <body>
+
+<div class="title-box">
+  <div class="brand-row">
+    <img src="brand-badge.png" alt="شعار" class="brand-badge-img">
+    <h2>Aldaliya Water Center<br><span style="font-size:15px;font-weight:600;color:#9fd6dc;">خريطة توزيع المياه اليومية - مركز الدالية</span></h2>
+  </div>
+  <div class="subtitle"><span class="live-dot"></span> بيانات محدّثة مباشرة من جدول التوزيع</div>
+  <div class="credits">
+    فكرة وإخراج: <span class="bold">م. أيمن عبد الرزاق حسن</span><br>
+    تصميم وغرافيك: <span class="bold">م. سحر بسام عيسى</span>
+  </div>
+</div>
+
+<!-- 💬 التعليقات فوق -->
+<div class="panel-card">
+  <div class="panel-title"><span class="bar"></span> رأيكم يهمنا</div>
+
+  <textarea id="commentInput" placeholder="اكتب رأيك هنا..."></textarea>
+
+  <button class="send-btn" onclick="addComment()">إرسال</button>
+
+  <div id="commentsList"></div>
+</div>
+
+<!-- 🗺️ الخريطة تحت -->
+<div class="map-card">
+  <div class="panel-title"><span class="bar"></span> الخريطة التفاعلية</div>
+  <div class="map" id="map">
+    <svg id="svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+    <img src="map.jpg" alt="خريطة شبكة توزيع المياه">
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-row">
+    <span class="legend-chip"><span class="box-red"></span> محطة عاملة</span>
+    <span class="legend-chip"><span class="box-blue"></span> منطقة تتلقى مياه</span>
+  </div>
+  <img src="Add.jpg" class="add-img" alt="صورة توضيحية">
+</div>
+
+<div class="popup" id="popup">
+  <button class="popup-close" onclick="closePopup()">✖</button>
+  <div id="popupContent"></div>
+</div>
+
+<button class="admin-btn" onclick="adminLogin()">🔐 دخول الإدمن</button>
+
+<div id="viewsBox">👁 عدد المشاهدات: ...</div>
+
+  
+
+
+<script>  
+;
+
+let isAdmin = false;
+
+function adminLogin(){
+
+  let password = prompt("ادخل كلمة سر الادمن:");
+
+  if(password === "1234"){
+    isAdmin = true;
+    alert("تم تفعيل وضع الادمن");
+    loadComments();
+  }else{
+    alert("كلمة السر خاطئة");
+  }
+
+}
+  const firebaseConfig = {
+  apiKey: "AIzaSyCZR8IiWtNji837hrpK80C9IrkfGP7lYLU",
+  authDomain: "water-50aba.firebaseapp.com",
+  projectId: "water-50aba",
+  storageBucket: "water-50aba.firebasestorage.app",
+  messagingSenderId: "398996887759",
+  appId: "1:398996887759:web:ab30260674ca8dd8cabfba",
+  measurementId: "G-Y4BV9G10R5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const viewsRef = db.collection("stats").doc("counter");
+
+let today = new Date().toISOString().slice(0, 10);
+let visitKey = "visit_" + today;
+
+// 🔴 مهم: منع التكرار قبل أي شيء
+if (!localStorage.getItem(visitKey)) {
+
+  localStorage.setItem(visitKey, "true"); // نحجز أولاً
+
+  viewsRef.update({
+  views: firebase.firestore.FieldValue.increment(1)
+});
+
+
+}
+
+// عرض العدد
+viewsRef.onSnapshot(doc => {
+  let current = doc.data().views || 0;
+
+  document.getElementById("viewsBox").innerText =
+    "👁 عدد المشاهدات: " + current;
+});
+  
+let data=[];  
+const map=document.getElementById("map");  
+const svg=document.getElementById("svg");  
+const popup=document.getElementById("popup");  
+  
+window.onload=function(){  
+  
+fetch("https://docs.google.com/spreadsheets/d/1Lr5kbXjnvhzL4cOfyp-zYnTNOmV1mQDpFzaxuIraAPU/export?format=xlsx")
+.then(r => r.arrayBuffer())
+.then(buffer=>{  
+  
+const wb=XLSX.read(buffer,{type:"array"});  
+const sheet=wb.Sheets[wb.SheetNames[0]];  
+data=XLSX.utils.sheet_to_json(sheet);  
+  
+draw();  
+  
+});  
+  
+};  
+function formatCoords(v){
+  if(!v) return "-";
+
+  return String(v)
+    .replace(/\n/g, " | ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+  
+function clean(p){
+
+const get = (keys) => {
+  for (let k of keys) {
+    if (p[k] !== undefined) return p[k];
+  }
+  return "";
+};
+
+return {
+type:String(p.type||"").trim(),
+name:String(p.name||"").trim(),
+source:String(p.source||"").trim(),
+x:+p.x,
+y:+p.y,
+elevation: p["منسوب المحطة عن سطح البحر"] || "",
+
+pumps:get(["pumps","المضخات"]),
+flow:get(["flow","الغزارة"]),
+beneficiaries:get(["عدد المستفيدين","beneficiaries"]),
+status:String(p.status||"").trim(),
+
+pumpBrand:get(["ماركة المضخة","pumpBrand"]),
+engineBrand:get(["ماركة المحرك","engineBrand"]),
+transformer:get(["المحولة","transformer"]),
+startYear:get(["سنة بدء العمل","startYear"]),
+
+from:get(["تستلم من","from"]),
+to:get(["تسلم إلى","to"]),
+coords: String(p["الاحداثيات"] || "").trim(),
+
+lifting:get(["الرفع","lifting"]),
+
+rotation:get(["الدوران","rotation"]),
+
+tankCapacity:get(["سعة الخزان","سعة الخزان " ,"tankCapacity"]),
+inletDiameter:get(["قطر خط الدخل","قطر خط الدخل " ,"inletDiameter"]),
+outletDiameter:get(["قطر خط الخرج","قطر خط الخرج " ,"outletDiameter"]),mainFeed: p["تغذية رئيسي للخزان"] || "",
+branchLines: p["خطوط فرعية"] || "",
+networkAge:get(["عمر الشبكة","networkAge"]),
+material:get(["نوع المادة","material"])
+};
+}
+const paths = {  
+  
+"بسمالخ":[  
+[51.08,15.57],  
+[51.08,4.08],  
+[66.49,3.28]  
+]  
+,  
+
+"بشيلي":[
+[50.78,15.43],
+[52.56,2.17],
+[37.74,3.72],
+[30.33,5.49]
+],
+"معرين الغربية":[
+[51.08,15.43],
+[51.67,9.24],
+[59.08,8.58],
+[57.89,20.07],
+[77.16,19.85],
+[86.93,20.96]
+],
+"بسطوير":[
+[50.19,29.02],
+[46.63,27.91],
+[45.45,31.89]
+],
+"بسنديانة":[
+[50.19,29.02],
+[46.63,27.91],
+[44.26,27.43],
+[41.30,30.79]
+
+],
+"دوير بسنديانة":[
+[51.67,35.21],
+[51.37,28.35],
+[44.26,27.47],
+[32.41,27.47],
+[33.30,30.34]
+],
+"جيبول":[
+[51.37,27.47],
+[46.04,27.47],
+[40.41,28.35],
+[32.70,26.36],
+[23.52,27.03]
+],
+"بشراغي":[
+[51.37,27.47],
+[46.04,27.47],
+[40.41,28.35],
+[32.70,26.36],
+[23.52,27.03],
+[18.50,25.50],
+[17.59,24.27]
+],"الحمام":[
+[51.37,27.47],
+[46.04,27.47],
+[40.41,28.35],
+[32.70,26.36],
+[23.52,27.03],
+[18.50,28.80],
+[13.44,28.13],
+[14.92,30.79]
+],
+"دالية غربية1":[
+[56.41,35.55],
+[60.56,33.56],
+[64.41,33.34]
+],
+"دالية غربية 2": [
+    [58.78, 33.68],
+    [70.64, 34.00]
+],
+"القصيبة": [
+    [65.89, 39.61],
+    [74.78, 39.61]
+],
+"بطشاح": [
+    [46.93, 44.65],
+    [40.41, 44.43]
+],
+"دوير بعبدة 1": [
+    [41.59, 62.66],
+    [39.82, 60.67]
+],
+"دوير بعبدة": [
+    [38.34, 62.80],
+    [35.08, 58.94]
+],
+"دوير بعبدة 2": [
+    [38.04, 61.75],
+    [30.33, 59.54],
+    [22.63, 57.33]
+],
+"الضهر": [
+    [58.49, 62.36]
+],
+"حرف الساري": [
+    [51.37, 64.23],
+    [65.30, 61.79],
+    [67.67, 64.45]
+],
+"الطريق": [
+    [42.78, 67.18]
+],
+"فويرسات": [
+    [58.78, 62.34],
+    [71.52, 61.23],
+    [77.45, 61.89]
+],
+"القلع": [
+    [58.78, 62.34],
+    [71.52, 61.23],
+    [85.45, 61.35]
+],
+"المشتية": [
+    [58.78, 62.34],
+    [71.52, 61.23],
+    [85.45, 61.35],
+    [93.45, 60.95]
+],
+"بعبدة": [
+    [55.82, 70.60],
+    [59.37, 70.15]
+],
+"الرباصة": [
+    [64.12, 69.23],
+    [72.12, 69.67]
+],
+"كنكارو": [
+    [40.71, 75.24],
+    [37.15, 70.40],
+    [32.70, 70.40]
+],
+"اللوزية": [
+    [38.34, 74.80],
+    [38.63, 73.25],
+    [33.89, 73.47]
+],
+
+"سربيون1": [
+    [36.56, 77.45],
+    [24.70, 75.24]
+],
+"البراعم": [
+    [64.71, 73.69]
+],
+"حرف الأسود": [
+    [35.67, 75.90],
+    [24.41, 77.89]
+],"الزهراء 1": [
+    [61.15, 78.55],
+    [76.27, 78.33],
+    [70.64, 80.54]
+],
+"الزهراء 2": [
+    [66.19, 79.00],
+    [75.38, 78.77],
+    [73.90, 80.32]
+],
+"الفيلات الفرن": [
+    [61.15, 78.39],
+    [74.78, 77.07],
+    [85.75, 77.29],
+    [87.82, 78.17]
+],
+"بيت العلوني": [
+    [34.19, 39.13],
+    [25.00, 39.35]
+],
+"سلمية": [
+    [58.19, 50.70],
+    [62.93, 50.92]
+],"دالية شرقية1": [
+    [57.60, 34.67],
+    [58.49, 33.56],
+    [64.41, 30.47],
+    [71.23, 30.02],
+    [77.45, 29.14]
+],"جوفين": [
+    [57.30, 31.81],
+    [66.19, 34.02],
+    [66.49, 34.57]
+],
+"سربيون الطاحون": [
+    [39.52, 64.85],
+    [22.93, 63.08]
+],"المنصورة": [
+    [33.00, 39.21],
+    [17.00, 39.65]
+],
+};  
+function draw(){  
+  if (!data || data.length === 0) return;
+
+  data = data.map(clean);  
+
+  document.querySelectorAll(".station,.area").forEach(e => e.remove());  
+  svg.innerHTML = "";  
+
+  /* ===== محطات ===== */  
+  data.forEach(p => {  
+
+    if(p.type === "محطة"){  
+
+      let s = document.createElement("div");  
+      s.className = "station";  
+      s.style.left = p.x + "%";  
+      s.style.top = p.y + "%";  
+
+      s.onclick = () => {  
+        popup.style.display = "block";  
+
+        const safe = (v) => (v === undefined || v === null || v === "") ? "-" : v;
+
+const row = (icon,label,val) => `
+  <div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(120,196,204,0.12);font-size:13.5px;">
+    <span style="color:#8fb0b4;white-space:nowrap;">${icon} ${label}</span>
+    <span style="color:#eaf6f6;font-weight:600;text-align:left;">${val}</span>
+  </div>`;
+
+document.getElementById("popupContent").innerHTML = `
+<div style="direction:rtl;text-align:right;font-family:'Tajawal',Arial;">
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+    <span style="width:9px;height:9px;border-radius:3px;background:#ff5a4e;box-shadow:0 0 6px rgba(255,90,78,0.7);flex:none;"></span>
+    <b style="font-family:'Cairo',Arial;font-size:17px;color:#fff;">${safe(p.name)}</b>
+  </div>
+  <div style="font-size:11.5px;color:#6f9498;margin-bottom:10px;">محطة عاملة</div>
+
+  ${row("🚰","تستلم من:",safe(p.from))}
+  ${row("🚚","تسلم إلى:",safe(p.to))}
+  ${row("📌","المضخات:",safe(p.pumps))}
+  ${row("⚙️","ماركة المضخة:",safe(p.pumpBrand))}
+  ${row("🔧","ماركة المحرك:",safe(p.engineBrand))}
+  ${row("⚡","المحولة:",safe(p.transformer))}
+  ${row("📅","سنة بدء العمل:",safe(p.startYear))}
+  ${row("📊","الغزارة:",safe(p.flow))}
+  ${row("👥","عدد المستفيدين:",safe(p.beneficiaries))}
+  ${row("📈","الرفع:",safe(p.lifting))}
+  ${row("🔄","الدوران:",safe(p.rotation))}
+  ${row("🏔️","منسوب المحطة عن سطح البحر:",p.elevation || "-")}
+  ${row("🛢️","سعة الخزان:",safe(p.tankCapacity))}
+  ${row("📥","قطر خط الدخل:",safe(p.inletDiameter))}
+  ${row("📤","قطر خط الخرج:",safe(p.outletDiameter))}
+
+<div style="margin-top:12px;font-size:13px;color:#8fb0b4;">📍 الإحداثيات</div>
+<div style="
+  direction:ltr;
+  text-align:left;
+  background:#081416;
+  border:1px solid rgba(120,196,204,0.18);
+  padding:9px;
+  border-radius:8px;
+  margin-top:6px;
+  font-family:monospace;
+  font-size:12.5px;
+  color:#7fdce8;
+  white-space:pre-wrap;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+">
+  ${formatCoords(p.coords)}
+</div>
+
+</div>
+`;
+
+        
+      };  
+
+      map.appendChild(s);  
+    }  
+
+    /* ===== مناطق ===== */  
+    if(p.type === "منطقة"){  
+
+      let a = document.createElement("div");  
+      a.className = "area";  
+      a.style.left = p.x + "%";  
+      a.style.top = p.y + "%";
+      
+      
+a.onclick = () => {
+
+  popup.style.display = "block";
+
+  const arow = (icon,label,val) => `
+    <div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(120,196,204,0.12);font-size:13.5px;">
+      <span style="color:#8fb0b4;white-space:nowrap;">${icon} ${label}</span>
+      <span style="color:#eaf6f6;font-weight:600;text-align:left;">${val}</span>
+    </div>`;
+
+  document.getElementById("popupContent").innerHTML = `
+<div style="direction:rtl;text-align:right;font-family:'Tajawal',Arial;">
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+    <span style="width:9px;height:9px;border-radius:50%;background:#2fc2d6;box-shadow:0 0 6px rgba(47,194,214,0.7);flex:none;"></span>
+    <b style="font-family:'Cairo',Arial;font-size:17px;color:#fff;">${p.name}</b>
+  </div>
+  <div style="font-size:11.5px;color:#6f9498;margin-bottom:10px;">منطقة تتلقى مياه</div>
+
+  ${arow("🚰","تغذية رئيسي للخزان:",p.mainFeed || "-")}
+  ${arow("🔀","خطوط فرعية:",p.branchLines || "-")}
+  ${arow("📅","عمر الشبكة:",p.networkAge || "-")}
+  ${arow("🧱","نوع المادة:",p.material || "-")}
+
+</div>
+`;
+
+};
+      map.appendChild(a);  
+    }  
+  });  
+
+  /* ===== خطوط المحطات ===== */  
+  let stations = data.filter(d => d.type === "محطة");  
+
+  for(let i = 0; i < stations.length - 1; i++){  
+
+    let a = stations[i];  
+    let b = stations[i + 1];  
+
+    if(!a || !b) continue;  
+if (
+    // خرايب سالم ↔ نبع جيبول
+    (a.name.includes("خرايب سالم") && b.name.includes("نبع جيبول")) ||
+    (a.name.includes("نبع جيبول") && b.name.includes("خرايب سالم")) ||
+
+    // خرايب سالم ↔ عين قبية
+    (a.name.includes("خرايب سالم") && b.name.includes("عين قبية")) ||
+    (a.name.includes("عين قبية") && b.name.includes("خرايب سالم")) ||
+
+    // نبع جيبول ↔ عين قبية
+    (a.name.includes("نبع جيبول") && b.name.includes("عين قبية")) ||
+    (a.name.includes("عين قبية") && b.name.includes("نبع جيبول"))
+){
+    continue;
+}
+    if (
+      (a.name === "قرفيص الثانية" && b.name === "محطة الزهراء") ||
+      (a.name === "محطة الزهراء" && b.name === "قرفيص الثانية")
+    ){
+      continue;
+    }
+
+    let line = document.createElementNS("http://www.w3.org/2000/svg","line");  
+
+    line.setAttribute("x1", a.x);  
+    line.setAttribute("y1", a.y);  
+    line.setAttribute("x2", b.x);  
+    line.setAttribute("y2", b.y);  
+    line.setAttribute("class", "station-line");  
+
+    svg.appendChild(line);  
+  }  
+
+  /* ===== خط قرفيص الدالية → الزهراء ===== */  
+  let dalia = data.find(d => d.name && d.name.includes("قرفيص الدالية"));  
+  let zahraa = data.find(d => d.name && d.name.includes("محطة الزهراء"));  
+
+  if(dalia && zahraa){  
+
+    let line = document.createElementNS("http://www.w3.org/2000/svg","line");  
+
+    line.setAttribute("x1", dalia.x);  
+    line.setAttribute("y1", dalia.y);  
+    line.setAttribute("x2", zahraa.x);  
+    line.setAttribute("y2", zahraa.y);  
+    line.setAttribute("class", "station-line");  
+
+    svg.appendChild(line);  
+  }  
+
+  /* ===== مسارات المناطق ===== */  
+  data.forEach(area => {  
+
+    if(area.type !== "منطقة") return;  if (area.status !== "نعم") return;
+
+    let station = data.find(s => s.name === area.source);  
+    if(!station) return;  
+
+    if(paths[area.name]){  
+
+      let pts = [
+        [station.x, station.y],
+        ...paths[area.name],
+        [area.x, area.y]
+      ];
+
+      for(let i = 0; i < pts.length - 1; i++){  
+
+        let line = document.createElementNS("http://www.w3.org/2000/svg","line");  
+
+        line.setAttribute("x1", pts[i][0]);  
+        line.setAttribute("y1", pts[i][1]);  
+        line.setAttribute("x2", pts[i+1][0]);  
+        line.setAttribute("y2", pts[i+1][1]);  
+
+        line.setAttribute("class", "water-line");  
+
+        svg.appendChild(line);  
+      }  
+
+      return;  
+    }  
+
+  });  
+
+  /* ===== قرفيص الأولى → الزهراء (path مضبوط) ===== */  
+
+  let first = data.find(d => d.name && d.name.includes("قرفيص الاولى"));  
+
+  if(first && zahraa){  
+
+    let pts = [  
+      [first.x, first.y],  
+      [32.41, 91.37],  
+      [40.71, 94.61],  
+      [51.08, 91.07],  
+      [zahraa.x, zahraa.y]  
+    ];  
+
+    let d = "M " + pts[0][0] + " " + pts[0][1];  
+
+    for(let i = 1; i < pts.length; i++){
+      d += " L " + pts[i][0] + " " + pts[i][1];
+    }
+
+    let path = document.createElementNS("http://www.w3.org/2000/svg","path");  
+    path.setAttribute("d", d);  
+    path.setAttribute("class", "station-line");  
+
+    svg.appendChild(path);  
+  }  
+}
+
+
+function addComment(){
+  let text = document.getElementById("commentInput").value;
+
+  console.log("sending:", text);
+
+  db.collection("comments").add({
+    text: text,
+    time: Date.now()
+  })
+  .then(() => {
+    console.log("saved ✔");
+  })
+  .catch(err => {
+    console.log("ERROR ❌", err);
+  });
+}
+
+function loadComments(){
+  db.collection("comments")
+    .orderBy("time","desc")
+    .onSnapshot(snapshot => {
+
+      let box = document.getElementById("commentsList");
+      box.innerHTML = "";
+
+      snapshot.forEach(doc => {
+        let c = doc.data();
+
+        let div = document.createElement("div");
+        div.className = "comment-bubble";
+
+        let deleteBtn = "";
+
+        if(isAdmin){
+          deleteBtn = `
+            <button class="comment-del" onclick="deleteComment('${doc.id}')">
+              حذف 🗑️
+            </button>
+          `;
+        }
+
+        div.innerHTML = `
+          💬 ${c.text}
+          <span class="comment-time">🕒 ${new Date(c.time).toLocaleString()}</span>
+          ${deleteBtn}
+        `;
+
+        box.appendChild(div);
+      });
+
+    });
+}
+
+function deleteComment(id){
+  db.collection("comments").doc(id).delete()
+    .then(() => {
+      console.log("comment deleted ✔");
+    })
+    .catch(err => {
+      console.log("delete error ❌", err);
+    });
+}
+
+loadComments();
+function closePopup(){
+  document.getElementById("popup").style.display = "none";
+}
+
+// ===== تسجيل Service Worker لتفعيل التطبيق كـ PWA =====
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(err => {
+      console.log("SW registration failed:", err);
+    });
+  });
+}
+</script>  </body>  
+</html>  
