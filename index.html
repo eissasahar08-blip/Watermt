@@ -1,0 +1,1634 @@
+<!DOCTYPE html>  <html lang="ar" dir="rtl">  <head>  
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<meta charset="UTF-8">  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">  <title>Aldaliya Water Center</title>
+<meta name="description" content="خريطة تفاعلية لتوزيع المياه اليومي في مركز الدالية">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0b0b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Aldaliya Water Center">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>  <style>
+
+:root{
+  --bg-deep:#0a1416;
+  --bg-deep2:#0d1c20;
+  --panel:#0f2229;
+  --panel-2:#122a32;
+  --line:rgba(120,196,204,0.16);
+  --line-strong:rgba(120,196,204,0.32);
+  --cyan:#2fc2d6;
+  --cyan-soft:#7fdce8;
+  --coral:#ff5a4e;
+  --gold:#d9a441;
+  --text:#eaf6f6;
+  --muted:#8fb0b4;
+  --shadow:0 10px 30px rgba(0,0,0,0.45);
+}
+
+*{box-sizing:border-box;}
+
+body{
+margin:0;
+min-height:100vh;
+background:
+  radial-gradient(1100px 600px at 15% -10%, rgba(47,194,214,0.10), transparent 55%),
+  radial-gradient(900px 500px at 100% 10%, rgba(217,164,65,0.06), transparent 50%),
+  linear-gradient(180deg,var(--bg-deep) 0%,var(--bg-deep2) 100%);
+color:var(--text);
+font-family:'Tajawal',Arial,sans-serif;
+text-align:center;
+padding-bottom:28px;
+}
+
+::selection{background:var(--cyan);color:#04211f;}
+
+.title-box{
+position:relative;
+background:linear-gradient(180deg,var(--panel),var(--panel-2));
+padding:20px 18px 18px;
+margin:16px auto 12px;
+width:92%;
+max-width:760px;
+border-radius:18px;
+border:1px solid var(--line);
+box-shadow:var(--shadow);
+overflow:hidden;
+}
+
+.title-box::before{
+content:"";
+position:absolute;
+inset:0 0 auto 0;
+height:3px;
+background:linear-gradient(90deg,transparent,var(--cyan),var(--gold),transparent);
+background-size:200% 100%;
+animation:flowline 6s linear infinite;
+}
+
+@keyframes flowline{
+0%{background-position:200% 0;}
+100%{background-position:-200% 0;}
+}
+
+.brand-row{
+display:flex;
+align-items:center;
+justify-content:center;
+gap:12px;
+margin-bottom:8px;
+}
+
+.brand-wrap{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  margin-bottom:2px;
+}
+
+.brand-title-tilted{
+  font-family:'Cairo',Arial,sans-serif;
+  font-weight:800;
+  font-size:16px;
+  color:#fff;
+  background:linear-gradient(90deg,rgba(47,194,214,0.18),rgba(217,164,65,0.18));
+  border:1px solid var(--line-strong);
+  padding:4px 14px;
+  border-radius:8px;
+  transform:rotate(-7deg);
+  margin-bottom:-6px;
+  white-space:nowrap;
+  box-shadow:0 4px 10px rgba(0,0,0,0.35);
+}
+
+.brand-badge-img{
+  width:130px;height:130px;
+  object-fit:contain;
+  flex:none;
+  margin:4px 0;
+}
+
+h2{
+margin:2px 0;
+font-family:'Cairo',Arial,sans-serif;
+font-weight:800;
+font-size:22px;
+letter-spacing:0.2px;
+color:#fff;
+}
+
+.main-title{
+margin:6px 0 0;
+font-family:'Cairo',Arial,sans-serif;
+font-weight:900;
+font-size:24px;
+letter-spacing:0.3px;
+color:#fff;
+}
+
+.subtitle{
+display:flex;
+align-items:center;
+justify-content:center;
+gap:6px;
+margin:6px 0 12px;
+font-size:12px;
+color:var(--cyan-soft);
+letter-spacing:0.5px;
+}
+
+.live-dot{
+width:8px;height:8px;border-radius:50%;
+background:var(--coral);
+box-shadow:0 0 0 0 rgba(255,90,78,0.6);
+animation:pulse 1.8s infinite;
+}
+
+@keyframes pulse{
+0%{box-shadow:0 0 0 0 rgba(255,90,78,0.55);}
+70%{box-shadow:0 0 0 9px rgba(255,90,78,0);}
+100%{box-shadow:0 0 0 0 rgba(255,90,78,0);}
+}
+
+.credits{
+font-size:12px;
+line-height:1.8;
+color:var(--muted);
+border-top:1px dashed var(--line);
+padding-top:10px;
+margin-top:4px;
+text-align:center;
+}
+
+.bold{
+font-size:12.5px;
+font-weight:700;
+color:#fff;
+font-family:'Cairo',Arial,sans-serif;
+}
+
+/* ===== بطاقة عامة مشتركة ===== */
+.panel-card{
+width:92%;
+max-width:760px;
+margin:14px auto;
+background:linear-gradient(180deg,var(--panel),var(--panel-2));
+padding:16px;
+border-radius:18px;
+border:1px solid var(--line);
+box-shadow:var(--shadow);
+text-align:right;
+}
+
+.panel-title{
+display:flex;
+align-items:center;
+gap:8px;
+font-family:'Cairo',Arial,sans-serif;
+font-weight:800;
+font-size:16px;
+color:#fff;
+margin:0 0 12px;
+}
+
+.panel-title .bar{
+width:4px;height:16px;border-radius:3px;
+background:linear-gradient(180deg,var(--cyan),var(--gold));
+flex:none;
+}
+
+#commentInput{
+width:100%;
+min-height:76px;
+background:#081416;
+color:var(--text);
+border:1px solid var(--line);
+border-radius:12px;
+padding:12px;
+font-family:'Tajawal',Arial,sans-serif;
+font-size:14px;
+resize:vertical;
+}
+#commentInput:focus{outline:2px solid var(--cyan);outline-offset:1px;}
+
+.send-btn{
+margin-top:10px;
+padding:10px 22px;
+background:linear-gradient(135deg,var(--cyan),#1e8fa0);
+color:#04211f;
+border:none;
+border-radius:10px;
+font-weight:800;
+font-family:'Cairo',Arial,sans-serif;
+cursor:pointer;
+box-shadow:0 6px 16px rgba(47,194,214,0.25);
+transition:transform .15s ease,box-shadow .15s ease;
+}
+.send-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(47,194,214,0.35);}
+.send-btn:active{transform:translateY(0);}
+
+#commentsList{margin-top:12px;display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;}
+
+.comment-bubble{
+background:#0b1c20;
+border:1px solid var(--line);
+border-radius:12px;
+padding:10px 12px;
+text-align:right;
+color:var(--text);
+}
+.comment-time{font-size:11px;color:var(--muted);display:block;margin-top:6px;}
+.comment-del{
+margin-top:8px;
+background:rgba(255,90,78,0.12);
+color:var(--coral);
+border:1px solid rgba(255,90,78,0.35);
+padding:5px 10px;
+border-radius:8px;
+cursor:pointer;
+font-family:'Tajawal',Arial,sans-serif;
+font-size:12.5px;
+}
+
+/* ===== الخريطة ===== */
+.map-card{
+width:92%;
+max-width:760px;
+margin:14px auto;
+background:linear-gradient(180deg,var(--panel),var(--panel-2));
+border-radius:18px;
+border:1px solid var(--line);
+box-shadow:var(--shadow);
+padding:12px;
+}
+
+.map-scroll{
+overflow:auto;
+border-radius:12px;
+-webkit-overflow-scrolling:touch;
+}
+
+.map{
+position:relative;
+width:100%;
+margin:0 auto;
+border-radius:12px;
+border:1px solid var(--line-strong);
+overflow:hidden;
+background:#04100f;
+transition:width .2s ease;
+}
+
+.zoom-controls{
+display:flex;
+gap:6px;
+flex:none;
+}
+.zoom-controls button{
+width:28px;
+height:28px;
+border-radius:8px;
+background:#0b1c20;
+color:var(--cyan-soft);
+border:1px solid rgba(120,196,204,0.3);
+font-size:15px;
+line-height:1;
+cursor:pointer;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+.zoom-controls button:active{background:#0f272d;}
+
+.map img{
+width:100%;
+display:block;
+pointer-events:none;
+}
+
+svg{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+pointer-events:none;
+}
+
+.station{
+position:absolute;
+width:11px;
+height:11px;
+background:var(--coral);
+box-shadow:0 0 8px rgba(255,90,78,0.7);
+border-radius:3px;
+transform:translate(-50%,-50%);
+animation:blink 1.5s infinite;
+cursor:pointer;
+}
+.area{
+position:absolute;
+width:8px;
+height:8px;
+border-radius:50%;
+background:var(--cyan);
+box-shadow:0 0 4px rgba(47,194,214,0.6);
+transform:translate(-50%,-50%);
+animation:blinkBlue 2s infinite;
+cursor:pointer;
+}
+
+.area-fixed-label{
+position:absolute;
+transform:translate(-50%,-160%);
+font-family:'Cairo',Arial,sans-serif;
+font-weight:800;
+font-size:10.5px;
+color:#fff;
+background:rgba(10,20,22,0.6);
+padding:2px 7px;
+border-radius:6px;
+border:1px solid rgba(120,196,204,0.35);
+white-space:nowrap;
+pointer-events:none;
+z-index:5;
+}
+
+.popup{
+position:fixed;
+top:16px;
+left:16px;
+right:16px;
+margin:0 auto;
+max-width:380px;
+background:linear-gradient(180deg,#0f2229,#0a171b);
+border:1px solid var(--line-strong);
+padding:18px 16px 16px;
+border-radius:16px;
+display:none;
+z-index:999999;
+min-width:240px;
+line-height:1.7;
+box-shadow:0 20px 50px rgba(0,0,0,0.6);
+max-height:82vh;
+overflow-y:auto;
+}
+
+.popup-close{
+position:absolute;
+top:10px;
+left:10px;
+background:rgba(255,90,78,0.15);
+color:var(--coral);
+border:1px solid rgba(255,90,78,0.4);
+border-radius:8px;
+width:30px;height:30px;
+cursor:pointer;
+font-size:15px;
+line-height:1;
+}
+
+.station-line{
+stroke:var(--coral);
+stroke-width:0.7;
+opacity:0.16;
+stroke-dasharray:2 10;
+animation:redFlow 80s linear infinite;
+stroke-linecap:round;
+fill:none;
+}
+.water-line{
+display:none;
+}
+
+@keyframes flow{
+from{stroke-dashoffset:0;}
+to{stroke-dashoffset:-200;}
+}
+@keyframes redFlow{
+from{stroke-dashoffset:0;}
+to{stroke-dashoffset:-800;}
+}
+@keyframes blink{
+0%{opacity:0.35;}
+50%{opacity:1;}
+100%{opacity:0.35;}
+}
+
+@keyframes blinkBlue{
+0%{opacity:0.5;}
+50%{opacity:0.9;}
+100%{opacity:0.5;}
+}
+
+/* ===== الدليل (Legend) ===== */
+.legend{
+width:92%;
+max-width:760px;
+margin:14px auto;
+background:linear-gradient(180deg,var(--panel),var(--panel-2));
+padding:14px 16px;
+border-radius:18px;
+border:1px solid var(--line);
+box-shadow:var(--shadow);
+font-size:14px;
+text-align:right;
+}
+
+.legend-row{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin-bottom:12px;
+}
+
+.legend-chip{
+display:inline-flex;
+align-items:center;
+gap:7px;
+background:#0b1c20;
+border:1px solid var(--line);
+padding:7px 12px;
+border-radius:999px;
+font-size:13px;
+color:var(--text);
+}
+
+.box-red{width:11px;height:11px;background:var(--coral);display:inline-block;border-radius:3px;box-shadow:0 0 6px rgba(255,90,78,0.6);}
+.box-blue{width:11px;height:11px;background:var(--cyan);display:inline-block;border-radius:50%;box-shadow:0 0 6px rgba(47,194,214,0.6);}
+
+.add-img{
+width:110px;
+border-radius:10px;
+border:1px solid var(--line-strong);
+display:block;
+margin:0 0 0 auto;
+}
+
+.admin-btn{
+display:inline-flex;
+align-items:center;
+gap:8px;
+margin:16px auto 6px;
+padding:11px 22px;
+background:#0b1c20;
+color:var(--gold);
+border:1px solid rgba(217,164,65,0.4);
+border-radius:12px;
+font-family:'Cairo',Arial,sans-serif;
+font-weight:700;
+font-size:14px;
+cursor:pointer;
+}
+.admin-btn:hover{border-color:var(--gold);}
+
+.sheet-btn{
+display:inline-flex;
+align-items:center;
+gap:8px;
+padding:11px 22px;
+background:#0b1c20;
+color:var(--cyan-soft);
+border:1px solid rgba(47,194,214,0.4);
+border-radius:12px;
+font-family:'Cairo',Arial,sans-serif;
+font-weight:700;
+font-size:14px;
+cursor:pointer;
+text-decoration:none;
+}
+.sheet-btn:hover{border-color:var(--cyan);}
+
+#viewsBox{
+margin:10px auto 4px;
+background:#0b1c20;
+color:var(--muted);
+padding:10px 16px;
+width:fit-content;
+min-width:180px;
+border-radius:999px;
+border:1px solid var(--line);
+font-size:13px;
+letter-spacing:0.3px;
+}
+
+@media (max-width:480px){
+  h2{font-size:19px;}
+  .panel-card,.map-card,.legend,.title-box{width:94%;border-radius:16px;}
+}
+
+</style>  </head>  <body>
+
+<div class="title-box">
+  <div class="brand-row">
+    <div class="brand-wrap">
+      <img src="brand-badge.png" alt="Aldaliya Water Center" class="brand-badge-img" id="secretLogo">
+    </div>
+  </div>
+  <div class="main-title">مركز الدالية</div>
+  <div style="font-size:15px;font-weight:600;color:#9fd6dc;margin-top:2px;">خريطة توزيع المياه اليومية</div>
+  <div class="subtitle"><span class="live-dot"></span> بيانات محدّثة مباشرة من جدول التوزيع</div>
+</div>
+
+<!-- 🗺️ الخريطة أول شي -->
+<div class="map-card">
+  <div class="panel-title" style="justify-content:space-between;">
+    <span><span class="bar"></span> الخريطة التفاعلية</span>
+    <span class="zoom-controls">
+      <button onclick="zoomOut()" aria-label="تصغير">−</button>
+      <button onclick="resetZoom()" aria-label="إعادة الضبط">⤾</button>
+      <button onclick="zoomIn()" aria-label="تكبير">+</button>
+    </span>
+  </div>
+  <div class="map-scroll" id="mapScroll">
+    <div class="map" id="map">
+      <svg id="svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+      <img src="map.jpg" alt="خريطة شبكة توزيع المياه">
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-row">
+    <span class="legend-chip"><span class="box-red"></span> محطة عاملة</span>
+    <span class="legend-chip"><span class="box-blue"></span> منطقة تتلقى مياه</span>
+  </div>
+  <img src="Add.jpg" class="add-img" alt="صورة توضيحية" onclick="openLightbox('Add.jpg')" style="cursor:pointer;">
+</div>
+
+<div class="popup" id="popup">
+  <button class="popup-close" onclick="closePopup()">✖</button>
+  <div id="popupContent"></div>
+</div>
+
+<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px;">
+  <a href="https://docs.google.com/spreadsheets/d/1LdHoU-jcy6DaqRfo7bjyVy58qimUKI_5609sruCtRDQ/edit?usp=drivesdk" target="_blank" rel="noopener" class="sheet-btn">📋 جدول التوزيع</a>
+  <button class="admin-btn" id="adminBtn" onclick="adminLogin()" style="display:none;">🔐 دخول الإدمن</button>
+</div>
+
+<div id="viewsBox">👁 عدد المشاهدات: ...</div>
+
+<div class="credits" style="width:92%;max-width:760px;margin:16px auto 0;">
+  تصميم وغرافيك: <span class="bold">م. سحر بسام عيسى</span><br>
+  فكرة وإخراج: <span class="bold">م. أيمن عبد الرزاق حسن</span>
+</div>
+
+<!-- 💬 التعليقات آخر شي -->
+<div class="panel-card">
+  <div class="panel-title"><span class="bar"></span> رأيكم يهمنا</div>
+
+  <textarea id="commentInput" placeholder="اكتب رأيك هنا..."></textarea>
+
+  <button class="send-btn" onclick="addComment()">إرسال</button>
+
+  <div id="commentsList"></div>
+</div>
+
+<div id="lightbox" onclick="closeLightbox()" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(4,10,11,0.95);
+  z-index:99999999;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+  cursor:zoom-out;
+">
+  <img id="lightboxImg" src="" style="max-width:100%;max-height:90vh;border-radius:10px;box-shadow:0 20px 50px rgba(0,0,0,0.6);">
+  <button onclick="closeLightbox()" style="
+    position:fixed;
+    top:16px;
+    left:16px;
+    width:36px;height:36px;
+    border-radius:10px;
+    background:rgba(255,90,78,0.85);
+    color:#fff;
+    border:none;
+    font-size:18px;
+    cursor:pointer;
+  ">✖</button>
+</div>
+
+  
+
+
+<script>  
+;
+
+let isAdmin = false;
+
+function adminLogin(){
+
+  let password = prompt("ادخل كلمة سر الادمن:");
+
+  if(password === "1234"){
+    isAdmin = true;
+    alert("تم تفعيل وضع الادمن");
+    loadComments();
+  }else{
+    alert("كلمة السر خاطئة");
+  }
+
+}
+
+  const firebaseConfig = {
+  apiKey: "AIzaSyCZR8IiWtNji837hrpK80C9IrkfGP7lYLU",
+  authDomain: "water-50aba.firebaseapp.com",
+  projectId: "water-50aba",
+  storageBucket: "water-50aba.firebasestorage.app",
+  messagingSenderId: "398996887759",
+  appId: "1:398996887759:web:ab30260674ca8dd8cabfba",
+  measurementId: "G-Y4BV9G10R5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const viewsRef = db.collection("stats").doc("counter");
+
+let today = new Date().toISOString().slice(0, 10);
+let visitKey = "visit_" + today;
+
+// 🔴 مهم: منع التكرار قبل أي شيء
+if (!localStorage.getItem(visitKey)) {
+
+  localStorage.setItem(visitKey, "true"); // نحجز أولاً
+
+  viewsRef.update({
+  views: firebase.firestore.FieldValue.increment(1)
+});
+
+
+}
+
+// عرض العدد
+viewsRef.onSnapshot(doc => {
+  let current = doc.data().views || 0;
+
+  document.getElementById("viewsBox").innerText =
+    "👁 عدد المشاهدات: " + current;
+});
+  
+let data=[];  
+const map=document.getElementById("map");  
+const svg=document.getElementById("svg");  
+const popup=document.getElementById("popup");  
+  
+window.onload=function(){  
+  
+fetch("https://docs.google.com/spreadsheets/d/1Lr5kbXjnvhzL4cOfyp-zYnTNOmV1mQDpFzaxuIraAPU/export?format=xlsx")
+.then(r => r.arrayBuffer())
+.then(buffer=>{  
+  
+const wb=XLSX.read(buffer,{type:"array"});  
+const sheet=wb.Sheets[wb.SheetNames[0]];  
+data=XLSX.utils.sheet_to_json(sheet);  
+  
+draw();  
+  
+});  
+  
+};  
+function formatCoords(v){
+  if(!v) return "-";
+
+  return String(v)
+    .replace(/\n/g, " | ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+  
+function clean(p){
+
+const get = (keys) => {
+  for (let k of keys) {
+    if (p[k] !== undefined) return p[k];
+  }
+  return "";
+};
+
+return {
+type:String(p.type||"").trim(),
+name:String(p.name||"").trim(),
+source:String(p.source||"").trim(),
+x:+p.x,
+y:+p.y,
+elevation: p["منسوب المحطة عن سطح البحر"] || "",
+
+pumps:get(["pumps","المضخات"]),
+flow:get(["flow","الغزارة"]),
+beneficiaries:get(["عدد المستفيدين","beneficiaries"]),
+status:String(p.status||"").trim(),
+
+pumpBrand:get(["ماركة المضخة","pumpBrand"]),
+engineBrand:get(["ماركة المحرك","engineBrand"]),
+transformer:get(["المحولة","transformer"]),
+startYear:get(["سنة بدء العمل","startYear"]),
+
+from:get(["تستلم من","from"]),
+to:get(["تسلم إلى","to"]),
+coords: String(p["الاحداثيات"] || "").trim(),
+
+lifting:get(["الرفع","lifting"]),
+
+rotation:get(["الدوران","rotation"]),
+
+tankCapacity:get(["سعة الخزان","سعة الخزان " ,"tankCapacity"]),
+inletDiameter:get(["قطر خط الدخل","قطر خط الدخل " ,"inletDiameter"]),
+outletDiameter:get(["قطر خط الخرج","قطر خط الخرج " ,"outletDiameter"]),
+valves:get(["عدد الصمامات","عدد الصمامات ","الصمامات","valves"]),
+mainFeed: p["تغذية رئيسي للخزان"] || "",
+branchLines: p["خطوط فرعية"] || "",
+networkAge:get(["عمر الشبكة","networkAge"]),
+material:get(["نوع المادة","material"])
+};
+}
+const paths = {  
+
+"بسمالخ":[
+[51.1,15.88],
+[50.99,4.21],
+[66.49,3.28]
+],
+
+"بشيلي":[
+[50.72,15.88],
+[52.26,2.21],
+[37.73,3.72],
+[30.31,5.77]
+],
+
+"معرين الغربية":[
+[51.1,15.88],
+[51.27,9.21],
+[59.08,8.58],
+[58.25,20.17],
+[77.28,19.84],
+[86.63,20.74]
+],
+
+"بسطوير":[
+[50.19,29.02],
+[47.03,28.23],
+[45.32,31.79]
+],
+
+"بسنديانة":[
+[50.19,29.02],
+[47.03,28.23],
+[44.39,27.41],
+[41.58,30.89]
+],
+
+"دوير بسنديانة":[
+[51.65,35.27],
+[50.99,28.36],
+[44.39,27.45],
+[32.12,27.45],
+[33.28,30.07]
+],
+
+"جيبول":[
+[51.38,27.66],
+[45.93,27.45],
+[40.21,28.15],
+[32.7,26.36],
+[23.54,26.96]
+],
+
+"بشراغي":[
+[51.38,27.66],
+[45.93,27.45],
+[40.21,28.15],
+[32.7,26.36],
+[23.54,26.96],
+[18.37,25.25],
+[17.6,24.22]
+],
+
+"الحمام":[
+[51.38,27.66],
+[45.93,27.45],
+[40.21,28.15],
+[32.7,26.36],
+[23.54,26.96],
+[18.5,28.8],
+[13.53,28.03],
+[15.07,30.69]
+],
+
+"دالية غربية1":[
+[55.94,35.56],
+[60.56,33.51],
+[64.41,33.35]
+],
+
+"دالية غربية 2":[
+[58.8,33.51],
+[70.68,34.12]
+],
+
+"القصيبة":[
+[65.9,39.16],
+[74.81,39.81]
+],
+
+"بطشاح":[
+[46.93,44.65],
+[40.41,44.43]
+],
+
+"دوير بعبدة 1":[
+[41.09,62.93],
+[39.77,60.64]
+],
+
+"دوير بعبدة":[
+[38.12,62.97],
+[34.6,59.29]
+],
+
+"دوير بعبدة 2":[
+[38.06,61.5],
+[30.09,59.98],
+[22.63,57.33]
+],
+
+"الضهر":[
+[58.49,62.36]
+],
+
+"حرف الساري":[
+[51.37,64.23],
+[65.29,61.29],
+[67.66,64.57]
+],
+
+"الطريق":[
+[42.78,67.18]
+],
+
+"فويرسات":[
+[58.78,62.34],
+[71.51,61.25],
+[77.28,61.91]
+],
+
+"القلع":[
+[58.78,62.34],
+[71.51,61.25],
+[85.42,61.25]
+],
+
+"المشتية":[
+[58.78,62.34],
+[71.51,61.25],
+[85.42,61.25],
+[92.79,61.21]
+],
+
+"بعبدة":[
+[55.82,70.6],
+[59.37,70.15]
+],
+
+"الرباصة":[
+[64.12,69.23],
+[72.12,69.67]
+],
+
+"كنكارو":[
+[40.54,75.25],
+[37.02,70.42],
+[32.7,70.4]
+],
+
+"اللوزية":[
+[38.34,74.63],
+[38.63,73.25],
+[33.89,73.47]
+],
+
+"سربيون1":[
+[36.56,77.45],
+[24.59,75.45]
+],
+
+"البراعم":[
+[64.69,73.69]
+],
+
+"حرف الأسود":[
+[35.64,76.15],
+[24.64,77.91]
+],
+
+"الزهراء 1":[
+[61.15,78.55],
+[76.24,78.19],
+[70.64,80.54]
+],
+
+"الزهراء 2":[
+[65.79,78.68],
+[75.8,79.09],
+[74.04,80.32]
+],
+
+"الفيلات الفرن":[
+[61.15,78.39],
+[74.81,77.09],
+[85.75,76.96],
+[87.82,78.17]
+],
+
+"بيت العلوني":[
+[34.21,39.03],
+[25.03,39.36]
+],
+
+"سلمية":[
+[58.19,50.7],
+[63.15,50.78]
+],
+
+"دالية شرقية1":[
+[57.6,34.67],
+[58.47,33.51],
+[64.74,30.48],
+[71.23,29.91],
+[77.45,29.21]
+],
+
+"جوفين":[
+[57.3,31.81],
+[66.06,34.0],
+[66.5,34.7]
+],
+
+"سربيون الطاحون":[
+[39.52,64.85],
+[22.93,63.08]
+],
+
+"المنصورة":[
+[33.0,39.03],
+[17.6,39.65]
+]
+};  
+function draw(){  
+  if (!data || data.length === 0) return;
+
+  data = data.map(clean);  
+
+  document.querySelectorAll(".station,.area").forEach(e => e.remove());  
+  svg.innerHTML = "";  
+
+  /* ===== محطات ===== */  
+  data.forEach(p => {  
+
+    if(p.type === "محطة"){  
+
+      // الضوء الأحمر يظهر فقط إذا كانت حالة المحطة "نعم"
+      let statusText = String(p.status || "").trim();
+      if(statusText !== "نعم") return;
+
+      let s = document.createElement("div");  
+      s.className = "station";  
+      s.style.left = p.x + "%";  
+      s.style.top = p.y + "%";  
+
+      s.onclick = () => {  
+        popup.style.display = "block";  
+
+        const safe = (v) => (v === undefined || v === null || v === "") ? "-" : v;
+
+const row = (icon,label,val) => `
+  <div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(120,196,204,0.12);font-size:13.5px;">
+    <span style="color:#8fb0b4;white-space:nowrap;">${icon} ${label}</span>
+    <span style="color:#eaf6f6;font-weight:600;text-align:left;">${val}</span>
+  </div>`;
+
+document.getElementById("popupContent").innerHTML = `
+<div style="direction:rtl;text-align:right;font-family:'Tajawal',Arial;">
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+    <span style="width:9px;height:9px;border-radius:3px;background:#ff5a4e;box-shadow:0 0 6px rgba(255,90,78,0.7);flex:none;"></span>
+    <b style="font-family:'Cairo',Arial;font-size:17px;color:#fff;">${safe(p.name)}</b>
+  </div>
+  <div style="font-size:11.5px;color:#6f9498;margin-bottom:10px;">محطة عاملة</div>
+
+  ${row("🚰","تستلم من:",safe(p.from))}
+  ${row("🚚","تسلم إلى:",safe(p.to))}
+  ${row("📌","المضخات:",safe(p.pumps))}
+  ${row("⚙️","ماركة المضخة:",safe(p.pumpBrand))}
+  ${row("🔧","ماركة المحرك:",safe(p.engineBrand))}
+  ${row("⚡","المحولة:",safe(p.transformer))}
+  ${row("📅","سنة بدء العمل:",safe(p.startYear))}
+  ${row("📊","الغزارة:",safe(p.flow))}
+  ${row("👥","عدد المستفيدين:",safe(p.beneficiaries))}
+  ${row("📈","الرفع:",safe(p.lifting))}
+  ${row("🔄","الدوران:",safe(p.rotation))}
+  ${row("🏔️","منسوب المحطة عن سطح البحر:",p.elevation || "-")}
+  ${row("🛢️","سعة الخزان:",safe(p.tankCapacity))}
+  ${row("📥","قطر خط الدخل:",safe(p.inletDiameter))}
+  ${row("📤","قطر خط الخرج:",safe(p.outletDiameter))}
+
+<div style="margin-top:12px;font-size:13px;color:#8fb0b4;">📍 الإحداثيات</div>
+<div style="
+  direction:ltr;
+  text-align:left;
+  background:#081416;
+  border:1px solid rgba(120,196,204,0.18);
+  padding:9px;
+  border-radius:8px;
+  margin-top:6px;
+  font-family:monospace;
+  font-size:12.5px;
+  color:#7fdce8;
+  white-space:pre-wrap;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+">
+  ${formatCoords(p.coords)}
+</div>
+
+<button id="galleryToggleBtn" onclick="toggleGallery()" style="
+  width:100%;
+  margin-top:14px;
+  background:#0b1c20;
+  color:#7fdce8;
+  border:1px solid rgba(120,196,204,0.3);
+  border-radius:10px;
+  padding:10px;
+  font-family:'Cairo',Arial;
+  font-weight:700;
+  font-size:13.5px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+">
+  <span>📷 صور المحطة</span>
+  <span id="galleryArrow">▾</span>
+</button>
+
+<div id="stationGallery" style="display:none;margin-top:10px;"></div>
+
+</div>
+`;
+
+        initStationGallery(safe(p.name));
+
+      };  
+
+      map.appendChild(s);  
+    }  
+
+    /* ===== مناطق ===== */  
+    if(p.type === "منطقة"){  
+
+      // الدائرة الزرقاء الوامضة تظهر فقط إذا كانت حالة المنطقة "نعم"
+      let areaStatus = String(p.status || "").trim();
+
+      // مناطق يظهر اسمها دائماً على الخريطة سواء كانت حالتها نعم أو لا
+      const alwaysShowNames = ["بيت الفاخوري"];
+      const isAlwaysShown = alwaysShowNames.some(n => p.name && p.name.trim().includes(n));
+
+      if(isAlwaysShown && !isNaN(p.x) && !isNaN(p.y)){
+        let lbl = document.createElement("div");
+        lbl.className = "area-fixed-label";
+        lbl.style.left = p.x + "%";
+        lbl.style.top = p.y + "%";
+        lbl.innerText = p.name;
+        map.appendChild(lbl);
+      }
+
+      if(areaStatus !== "نعم"){
+        return;
+      }
+
+      let a = document.createElement("div");  
+      a.className = "area";  
+      a.style.left = p.x + "%";  
+      a.style.top = p.y + "%";
+      
+      
+a.onclick = () => {
+
+  popup.style.display = "block";
+
+  const arow = (icon,label,val) => `
+    <div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(120,196,204,0.12);font-size:13.5px;">
+      <span style="color:#8fb0b4;white-space:nowrap;">${icon} ${label}</span>
+      <span style="color:#eaf6f6;font-weight:600;text-align:left;">${val}</span>
+    </div>`;
+
+  document.getElementById("popupContent").innerHTML = `
+<div style="direction:rtl;text-align:right;font-family:'Tajawal',Arial;">
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+    <span style="width:9px;height:9px;border-radius:50%;background:#2fc2d6;box-shadow:0 0 6px rgba(47,194,214,0.7);flex:none;"></span>
+    <b style="font-family:'Cairo',Arial;font-size:17px;color:#fff;">${p.name}</b>
+  </div>
+  <div style="font-size:11.5px;color:#6f9498;margin-bottom:10px;">منطقة تتلقى مياه</div>
+
+  ${arow("🚰","تغذية رئيسي للخزان:",p.mainFeed || "-")}
+  ${arow("🔀","خطوط فرعية:",p.branchLines || "-")}
+  ${arow("🔩","عدد الصمامات:",p.valves || "-")}
+  ${arow("📅","عمر الشبكة:",p.networkAge || "-")}
+  ${arow("🧱","نوع المادة:",p.material || "-")}
+
+</div>
+`;
+
+};
+      map.appendChild(a);  
+    }  
+  });  
+
+  /* ===== خطوط المحطات ===== */  
+  let stations = data.filter(d => d.type === "محطة");  
+
+  for(let i = 0; i < stations.length - 1; i++){  
+
+    let a = stations[i];  
+    let b = stations[i + 1];  
+
+    if(!a || !b) continue;  
+if (
+    // خرايب سالم ↔ نبع جيبول
+    (a.name.includes("خرايب سالم") && b.name.includes("نبع جيبول")) ||
+    (a.name.includes("نبع جيبول") && b.name.includes("خرايب سالم")) ||
+
+    // خرايب سالم ↔ عين قبية
+    (a.name.includes("خرايب سالم") && b.name.includes("عين قبية")) ||
+    (a.name.includes("عين قبية") && b.name.includes("خرايب سالم")) ||
+
+    // نبع جيبول ↔ عين قبية
+    (a.name.includes("نبع جيبول") && b.name.includes("عين قبية")) ||
+    (a.name.includes("عين قبية") && b.name.includes("نبع جيبول"))
+){
+    continue;
+}
+    if (
+      (a.name === "قرفيص الثانية" && b.name === "محطة الزهراء") ||
+      (a.name === "محطة الزهراء" && b.name === "قرفيص الثانية")
+    ){
+      continue;
+    }
+
+    let line = document.createElementNS("http://www.w3.org/2000/svg","line");  
+
+    line.setAttribute("x1", a.x);  
+    line.setAttribute("y1", a.y);  
+    line.setAttribute("x2", b.x);  
+    line.setAttribute("y2", b.y);  
+    line.setAttribute("class", "station-line");  
+
+    svg.appendChild(line);  
+  }  
+
+  /* ===== خط قرفيص الدالية → الزهراء ===== */  
+  let dalia = data.find(d => d.name && d.name.includes("قرفيص الدالية"));  
+  let zahraa = data.find(d => d.name && d.name.includes("محطة الزهراء"));  
+
+  if(dalia && zahraa){  
+
+    let line = document.createElementNS("http://www.w3.org/2000/svg","line");  
+
+    line.setAttribute("x1", dalia.x);  
+    line.setAttribute("y1", dalia.y);  
+    line.setAttribute("x2", zahraa.x);  
+    line.setAttribute("y2", zahraa.y);  
+    line.setAttribute("class", "station-line");  
+
+    svg.appendChild(line);  
+  }  
+
+  /* ===== خط محطة خرايب سالم → خزان خرايب سالم (إحداثيات الخزان ثابتة، غير موجودة بالجدول) ===== */
+  let khraebStation = data.find(d => d.name && d.name.includes("خرايب سالم") && d.type === "محطة");
+
+  if(khraebStation){
+
+    let khraebTankX = 45;   // ⚠️ تقريبية بناءً على موقعها بالصورة (مربع "خزان خرايب سالم 200m³" أعلى الخريطة) - عدّليها إذا لزم
+    let khraebTankY = 3;
+
+    let line = document.createElementNS("http://www.w3.org/2000/svg","line");
+
+    line.setAttribute("x1", khraebStation.x);
+    line.setAttribute("y1", khraebStation.y);
+    line.setAttribute("x2", khraebTankX);
+    line.setAttribute("y2", khraebTankY);
+    line.setAttribute("class", "station-line");
+
+    svg.appendChild(line);
+  }
+
+  /* ===== مسارات المناطق ===== */  
+  data.forEach(area => {  
+
+    if(area.type !== "منطقة") return;  if (area.status !== "نعم") return;
+
+    let station = data.find(s => s.name === area.source);  
+    if(!station) return;  
+
+    if(paths[area.name]){  
+
+      let pts = [
+        [station.x, station.y],
+        ...paths[area.name],
+        [area.x, area.y]
+      ];
+
+      for(let i = 0; i < pts.length - 1; i++){  
+
+        let line = document.createElementNS("http://www.w3.org/2000/svg","line");  
+
+        line.setAttribute("x1", pts[i][0]);  
+        line.setAttribute("y1", pts[i][1]);  
+        line.setAttribute("x2", pts[i+1][0]);  
+        line.setAttribute("y2", pts[i+1][1]);  
+
+        line.setAttribute("class", "water-line");  
+
+        svg.appendChild(line);  
+      }  
+
+      return;  
+    }  
+
+  });  
+
+  /* ===== قرفيص الأولى → الزهراء (path مضبوط) ===== */  
+
+  let first = data.find(d => d.name && d.name.includes("قرفيص الاولى"));  
+
+  if(first && zahraa){  
+
+    let pts = [  
+      [first.x, first.y],  
+      [32.41, 91.37],  
+      [40.71, 94.61],  
+      [51.08, 91.07],  
+      [zahraa.x, zahraa.y]  
+    ];  
+
+    let d = "M " + pts[0][0] + " " + pts[0][1];  
+
+    for(let i = 1; i < pts.length; i++){
+      d += " L " + pts[i][0] + " " + pts[i][1];
+    }
+
+    let path = document.createElementNS("http://www.w3.org/2000/svg","path");  
+    path.setAttribute("d", d);  
+    path.setAttribute("class", "station-line");  
+
+    svg.appendChild(path);  
+  }  
+}
+
+
+function addComment(){
+  let text = document.getElementById("commentInput").value;
+
+  console.log("sending:", text);
+
+  db.collection("comments").add({
+    text: text,
+    time: Date.now()
+  })
+  .then(() => {
+    console.log("saved ✔");
+  })
+  .catch(err => {
+    console.log("ERROR ❌", err);
+  });
+}
+
+function loadComments(){
+  db.collection("comments")
+    .orderBy("time","desc")
+    .onSnapshot(snapshot => {
+
+      let box = document.getElementById("commentsList");
+      box.innerHTML = "";
+
+      snapshot.forEach(doc => {
+        let c = doc.data();
+
+        let div = document.createElement("div");
+        div.className = "comment-bubble";
+
+        let deleteBtn = "";
+
+        if(isAdmin){
+          deleteBtn = `
+            <button class="comment-del" onclick="deleteComment('${doc.id}')">
+              حذف 🗑️
+            </button>
+          `;
+        }
+
+        div.innerHTML = `
+          💬 ${c.text}
+          <span class="comment-time">🕒 ${new Date(c.time).toLocaleString()}</span>
+          ${deleteBtn}
+        `;
+
+        box.appendChild(div);
+      });
+
+    });
+}
+
+function deleteComment(id){
+  db.collection("comments").doc(id).delete()
+    .then(() => {
+      console.log("comment deleted ✔");
+    })
+    .catch(err => {
+      console.log("delete error ❌", err);
+    });
+}
+
+loadComments();
+// ===================== 🔍 تكبير/تصغير الخريطة =====================
+let mapZoom = 1;
+const ZOOM_STEP = 0.35;
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 3;
+
+function applyZoom(){
+  document.getElementById("map").style.width = (mapZoom * 100) + "%";
+}
+function zoomIn(){
+  mapZoom = Math.min(ZOOM_MAX, +(mapZoom + ZOOM_STEP).toFixed(2));
+  applyZoom();
+}
+function zoomOut(){
+  mapZoom = Math.max(ZOOM_MIN, +(mapZoom - ZOOM_STEP).toFixed(2));
+  applyZoom();
+}
+function resetZoom(){
+  mapZoom = 1;
+  applyZoom();
+  document.getElementById("mapScroll").scrollLeft = 0;
+  document.getElementById("mapScroll").scrollTop = 0;
+}
+
+// ===================== 🖼️ عرض الصورة بحجم كبير =====================
+function openLightbox(src){
+  document.getElementById("lightboxImg").src = src;
+  document.getElementById("lightbox").style.display = "flex";
+}
+function closeLightbox(){
+  document.getElementById("lightbox").style.display = "none";
+  document.getElementById("lightboxImg").src = "";
+}
+
+function closePopup(){
+  document.getElementById("popup").style.display = "none";
+}
+
+// ===================== 📷 صور المحطات =====================
+
+function slugifyStationName(name){
+  return String(name || "unknown")
+    .trim()
+    .replace(/[.#$/\[\]]/g, "_")
+    .replace(/\s+/g, "_");
+}
+
+let currentGalleryStation = null;
+let galleryOpen = false;
+
+function toggleGallery(){
+  galleryOpen = !galleryOpen;
+  document.getElementById("stationGallery").style.display = galleryOpen ? "block" : "none";
+  document.getElementById("galleryArrow").innerText = galleryOpen ? "▴" : "▾";
+}
+
+function initStationGallery(stationName){
+  currentGalleryStation = slugifyStationName(stationName);
+  galleryOpen = false;
+  document.getElementById("stationGallery").style.display = "none";
+  document.getElementById("galleryArrow").innerText = "▾";
+  renderGalleryLoading();
+  loadStationPhotos(currentGalleryStation);
+}
+
+function renderGalleryLoading(){
+  document.getElementById("stationGallery").innerHTML =
+    `<div style="color:#8fb0b4;font-size:12.5px;padding:8px 0;">جاري تحميل الصور...</div>`;
+}
+
+function loadStationPhotos(stationId){
+  db.collection("stationPhotos").doc(stationId).get()
+    .then(doc => {
+      const urls = (doc.exists && doc.data().urls) ? doc.data().urls : [];
+      renderGallery(stationId, urls);
+    })
+    .catch(err => {
+      console.log(err);
+      document.getElementById("stationGallery").innerHTML =
+        `<div style="color:#ff5a4e;font-size:12.5px;">تعذّر تحميل الصور.</div>`;
+    });
+}
+
+function renderGallery(stationId, urls){
+  if(stationId !== currentGalleryStation) return; // المستخدم فتح محطة تانية بالأثناء
+
+  const grid = document.createElement("div");
+  grid.style.display = "grid";
+  grid.style.gridTemplateColumns = "repeat(3, 1fr)";
+  grid.style.gap = "6px";
+
+  urls.forEach(url => {
+    const wrap = document.createElement("div");
+    wrap.style.position = "relative";
+
+    const img = document.createElement("img");
+    img.src = url;
+    img.style.width = "100%";
+    img.style.height = "70px";
+    img.style.objectFit = "cover";
+    img.style.borderRadius = "8px";
+    img.style.border = "1px solid rgba(120,196,204,0.25)";
+    img.style.cursor = "pointer";
+    img.onclick = () => openLightbox(url);
+    wrap.appendChild(img);
+
+    if(isAdmin){
+      const del = document.createElement("button");
+      del.innerText = "✖";
+      del.style.position = "absolute";
+      del.style.top = "2px";
+      del.style.left = "2px";
+      del.style.background = "rgba(255,90,78,0.85)";
+      del.style.color = "#fff";
+      del.style.border = "none";
+      del.style.borderRadius = "6px";
+      del.style.width = "20px";
+      del.style.height = "20px";
+      del.style.fontSize = "11px";
+      del.style.cursor = "pointer";
+      del.onclick = (e) => { e.stopPropagation(); deleteStationPhoto(stationId, url); };
+      wrap.appendChild(del);
+    }
+
+    grid.appendChild(wrap);
+  });
+
+  const container = document.getElementById("stationGallery");
+  container.innerHTML = "";
+
+  if(urls.length === 0){
+    const empty = document.createElement("div");
+    empty.style.color = "#8fb0b4";
+    empty.style.fontSize = "12.5px";
+    empty.style.padding = "4px 0 10px";
+    empty.innerText = "لا يوجد صور لهذه المحطة حتى الآن.";
+    container.appendChild(empty);
+  } else {
+    container.appendChild(grid);
+  }
+
+  if(isAdmin){
+    const addWrap = document.createElement("div");
+    addWrap.style.marginTop = "10px";
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.multiple = true;
+    input.style.display = "none";
+    input.onchange = (e) => uploadStationPhotos(stationId, e.target.files);
+
+    const btn = document.createElement("button");
+    btn.innerText = "+ إضافة صور";
+    btn.style.width = "100%";
+    btn.style.padding = "9px";
+    btn.style.background = "rgba(217,164,65,0.12)";
+    btn.style.color = "#d9a441";
+    btn.style.border = "1px solid rgba(217,164,65,0.4)";
+    btn.style.borderRadius = "8px";
+    btn.style.fontFamily = "'Cairo',Arial";
+    btn.style.fontWeight = "700";
+    btn.style.fontSize = "13px";
+    btn.style.cursor = "pointer";
+    btn.onclick = () => input.click();
+
+    addWrap.appendChild(btn);
+    addWrap.appendChild(input);
+    container.appendChild(addWrap);
+  }
+}
+
+function compressImage(file, maxWidth, quality){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if(w > maxWidth){
+          h = Math.round(h * (maxWidth / w));
+          w = maxWidth;
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function uploadStationPhotos(stationId, files){
+  if(!files || files.length === 0) return;
+
+  document.getElementById("stationGallery").innerHTML =
+    `<div style="color:#8fb0b4;font-size:12.5px;padding:8px 0;">جاري ضغط ورفع الصور...</div>`;
+
+  const compressPromises = Array.from(files).map(file => compressImage(file, 900, 0.55));
+
+  Promise.all(compressPromises)
+    .then(newDataUrls => {
+      const docRef = db.collection("stationPhotos").doc(stationId);
+      return docRef.get().then(doc => {
+        const existing = (doc.exists && doc.data().urls) ? doc.data().urls : [];
+        const merged = existing.concat(newDataUrls);
+
+        // حماية بسيطة: حجم مستند Firestore محدود بـ 1MB، فما منسمح يتخطى ذلك
+        const totalSize = JSON.stringify(merged).length;
+        if(totalSize > 900000){
+          throw new Error("SIZE_LIMIT");
+        }
+
+        return docRef.set({ urls: merged });
+      });
+    })
+    .then(() => loadStationPhotos(stationId))
+    .catch(err => {
+      console.log(err);
+      const msg = (err && err.message === "SIZE_LIMIT")
+        ? "وصلتوا للحد الأقصى لعدد/حجم الصور لهاي المحطة. احذفي صورة قديمة قبل ما تضيفي جديدة."
+        : "صار خطأ برفع الصور. جرب كمان مرة.";
+      document.getElementById("stationGallery").innerHTML =
+        `<div style="color:#ff5a4e;font-size:12.5px;">${msg}</div>`;
+    });
+}
+
+function deleteStationPhoto(stationId, url){
+  if(!confirm("حذف هاي الصورة؟")) return;
+
+  const docRef = db.collection("stationPhotos").doc(stationId);
+  docRef.get().then(doc => {
+    const existing = (doc.exists && doc.data().urls) ? doc.data().urls : [];
+    const updated = existing.filter(u => u !== url);
+    docRef.set({ urls: updated }).then(() => loadStationPhotos(stationId));
+  });
+}
+
+// ===== إظهار زر الإدمن فقط بضغط سري (5 ضغطات متتالية على الشعار خلال ثانيتين) =====
+(function(){
+  let taps = 0;
+  let timer = null;
+  const logo = document.getElementById("secretLogo");
+  if(logo){
+    logo.addEventListener("click", function(){
+      taps++;
+      if(timer) clearTimeout(timer);
+      timer = setTimeout(() => { taps = 0; }, 2000);
+      if(taps >= 5){
+        document.getElementById("adminBtn").style.display = "inline-flex";
+        taps = 0;
+      }
+    });
+  }
+})();
+
+// ===== تسجيل Service Worker لتفعيل التطبيق كـ PWA =====
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(err => {
+      console.log("SW registration failed:", err);
+    });
+  });
+}
+</script>  </body>  
+</html>  
